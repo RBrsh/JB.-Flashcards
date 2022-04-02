@@ -1,3 +1,7 @@
+class TermOrDefinitionExists(Exception):
+    pass
+
+
 class TermDoesNotExist(Exception):
     pass
 
@@ -55,6 +59,7 @@ class CardsDeck:
                 counter += 1
                 if counter >= ask_limit:
                     break
+
 
     def update_card(self, term: str, definition: str):
         if self.exists_term(term):
