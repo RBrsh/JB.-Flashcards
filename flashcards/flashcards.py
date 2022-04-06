@@ -1,5 +1,6 @@
 import io
 import sys
+import argparse
 
 
 class TermOrDefinitionExists(Exception):
@@ -141,9 +142,43 @@ class CardsDeck:
         self.cards_terms_mistakes = [0] * len(self.cards_terms_mistakes)
 
 
+def import_cards(cards_deck_obj, filename):
+    with open(filename) as fh:
+        counter = 0
+        for line in fh:
+            term_def = line.split(sep=';')
+            cards_deck_obj.update_card(term_def[0].strip(),
+                                       term_def[1].strip(),
+                                       int(term_def[2].strip()))
+            counter += 1
+    return counter
+
+
+def export_cards(cards_deck_obj, filename):
+    cards_for_export = [f'{k};{v[0]};{v[1]}\n' for k, v in
+                        cards_deck_obj.export_cards().items()]
+
+    with open(filename, 'w') as fh:
+        fh.writelines(cards_for_export)
+
+    return len(cards_for_export)
+
+
 def main():
+    args_parser = argparse.ArgumentParser(description="Smth ab' this program.")
+    args_parser.add_argument('--import_from')
+    args_parser.add_argument('--export_to')
+    args = args_parser.parse_args()
+
     cards_to_study = CardsDeck()
     sys.stdin = sys.stdout = InOutInterceptor()
+
+    if args.import_from:
+        try:
+            import_result = import_cards(cards_to_study, args.import_from)
+            print(f'{import_result} cards have been loaded.')
+        except FileNotFoundError:
+            print('File not found.')
 
     while True:
         user_input = input('\nInput the action (add, remove, import, export, '
@@ -178,26 +213,14 @@ def main():
         elif user_input == "import":
             filename = input('File name:\n')
             try:
-                with open(filename) as fh:
-                    counter = 0
-                    for line in fh:
-                        term_def = line.split(sep=';')
-                        cards_to_study.update_card(term_def[0].strip(),
-                                                   term_def[1].strip(),
-                                                   int(term_def[2].strip()))
-                        counter += 1
-
-                    print(f'{counter} cards have been loaded.')
+                import_result = import_cards(cards_to_study, filename)
+                print(f'{import_result} cards have been loaded.')
             except FileNotFoundError:
                 print('File not found.')
         elif user_input == "export":
-            cards_for_export = [f'{k};{v[0]};{v[1]}\n' for k, v in
-                                cards_to_study.export_cards().items()]
-
             filename = input('File name:\n')
-            with open(filename, 'w') as fh:
-                fh.writelines(cards_for_export)
-                print(f'{len(cards_for_export)} cards have been saved.')
+            cards_saved = export_cards(cards_to_study, filename)
+            print(f'{cards_saved} cards have been saved.')
         elif user_input == "ask":
             times_to_ask = int(input('How many times to ask?\n'))
             cards_to_study.study(times_to_ask)
@@ -226,6 +249,9 @@ def main():
             print('The log has been saved.')
         elif user_input == "exit":
             print("Bye bye!")
+            if args.export_to:
+                cards_saved = export_cards(cards_to_study, args.export_to)
+                print(f'{cards_saved} cards have been saved.')
             break
 
 
